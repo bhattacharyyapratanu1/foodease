@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Order #{{ order.order_number }} – FoodEase{% endblock %}
+
+{% block content %}
+<div class="order-detail-page">
+    <div class="container order-detail-container">
+
+        <!-- Header -->
+        <div class="order-header-card">
+            <div class="order-header-top">
+                <div class="order-title-group">
+                    <span class="order-success-pill">
+                        <i class="fa-solid fa-circle-check"></i> Order {{ order.status.replace('_', ' ').title() }}
+                    </span>
+                    <h1 class="order-number-title">Order #{{ order.order_number }}</h1>
+                    <span class="order-placed-time">Placed on {{ order.created_at }}</span>
+                </div>
+
+                <div class="order-restaurant-tag">
+                    <img src="{{ order.restaurant_image }}" alt="{{ order.restaurant_name }}" class="order-rest-avatar" />
+                    <div>
+                        <strong class="order-rest-name">{{ order.restaurant_name }}</strong>
+                        <span class="order-rest-phone"><i class="fa-solid fa-phone"></i> {{ order.restaurant_phone }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Status Progress Tracker -->
+            <div class="order-tracker-wrapper">
+                {% set status_step = 1 %}
+                {% if order.status == 'confirmed' %}{% set status_step = 2 %}
+                {% elif order.status == 'preparing' %}{% set status_step = 3 %}
+                {% elif order.status == 'out_for_delivery' %}{% set status_step = 4 %}
+                {% elif order.status == 'delivered' %}{% set status_step = 5 %}
+                {% endif %}
+
+                <div class="tracker-steps">
+                    <!-- Step 1 -->
+                    <div class="tracker-step {% if status_step >= 1 %}completed{% endif %}">
+                        <div class="step-icon-circle"><i class="fa-solid fa-receipt"></i></div>
+                        <span class="step-title">Order Placed</span>
+                        <span class="step-sub">We got your order</span>
+                    </div>
+
+                    <div class="tracker-line {% if status_step >= 2 %}active-line{% endif %}"></div>
+
+                    <!-- Step 2 -->
+                    <div class="tracker-step {% if status_step >= 2 %}completed{% endif %}">
+                        <div class="step-icon-circle"><i class="fa-solid fa-store"></i></div>
+                        <span class="step-title">Confirmed</span>
+                        <span class="step-sub">Kitchen accepted</span>
+                    </div>
+
+                    <div class="tracker-line {% if status_step >= 3 %}active-line{% endif %}"></div>
+
+                    <!-- Step 3 -->
+                    <div class="tracker-step {% if status_step >= 3 %}completed{% endif %}">
+                        <div class="step-icon-circle"><i class="fa-solid fa-fire-burner"></i></div>
+                        <span class="step-title">Preparing</span>
+                        <span class="step-sub">Chef is cooking</span>
+                    </div>
+
+                    <div class="tracker-line {% if status_step >= 4 %}active-line{% endif %}"></div>
+
+                    <!-- Step 4 -->
+                    <div class="tracker-step {% if status_step >= 4 %}completed{% endif %}">
+                        <div class="step-icon-circle"><i class="fa-solid fa-motorcycle"></i></div>
+                        <span class="step-title">On the Way</span>
+                        <span class="step-sub">Courier dispatched</span>
+                    </div>
+
+                    <div class="tracker-line {% if status_step >= 5 %}active-line{% endif %}"></div>
+
+                    <!-- Step 5 -->
+                    <div class="tracker-step {% if status_step >= 5 %}completed{% endif %}">
+                        <div class="step-icon-circle"><i class="fa-solid fa-house"></i></div>
+                        <span class="step-title">Delivered</span>
+                        <span class="step-sub">Enjoy your meal!</span>
+                    </div>
+                </div>
+
+                <!-- Live ETA Box -->
+                <div class="live-eta-banner">
+                    <div class="eta-icon"><i class="fa-solid fa-clock"></i></div>
+                    <div class="eta-text">
+                        {% if order.status == 'delivered' %}
+                            <strong>Order Delivered!</strong>
+                            <span>We hope you enjoyed the food. Feel free to leave a review!</span>
+                        {% else %}
+                            <strong>Estimated Arrival: 25 - 35 Minutes</strong>
+                            <span>Our rider is equipped with insulated thermal bags to ensure hot & fresh delivery.</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Information & Receipt Grid -->
+        <div class="order-receipt-grid">
+            <!-- Left: Line items -->
+            <div class="receipt-items-card">
+                <h3 class="receipt-section-title">Ordered Items ({{ items|length }})</h3>
+
+                <div class="receipt-items-table">
+                    {% for item in items %}
+                    <div class="receipt-item-row">
+                        <div class="receipt-item-info">
+                            <span class="item-qty-badge">{{ item.quantity }}x</span>
+                            <span class="item-name">{{ item.food_item_name }}</span>
+                        </div>
+                        <div class="receipt-item-price">
+                            <span>₹{{ item.total_price|int }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="receipt-divider"></div>
+
+                <div class="receipt-totals-list">
+                    <div class="receipt-calc-row">
+                        <span>Items Subtotal</span>
+                        <span>₹{{ order.subtotal|int }}</span>
+                    </div>
+                    <div class="receipt-calc-row">
+                        <span>Delivery Fee</span>
+                        <span>
+                            {% if order.delivery_fee == 0 %}
+                                <strong class="text-green">FREE</strong>
+                            {% else %}
+                                ₹{{ order.delivery_fee|int }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="receipt-calc-row">
+                        <span>Taxes & Charges (GST 5%)</span>
+                        <span>₹{{ order.tax|int }}</span>
+                    </div>
+                    <div class="receipt-calc-row total-calc-row">
+                        <strong>Total Paid</strong>
+                        <strong class="receipt-grand-total">₹{{ order.total_amount|int }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Delivery Details -->
+            <div class="receipt-delivery-card">
+                <h3 class="receipt-section-title">Delivery Details</h3>
+
+                <div class="delivery-detail-block">
+                    <div class="detail-label"><i class="fa-solid fa-location-dot"></i> Delivery Address</div>
+                    <div class="detail-value">{{ order.delivery_address }}</div>
+                </div>
+
+                <div class="delivery-detail-block">
+                    <div class="detail-label"><i class="fa-solid fa-credit-card"></i> Payment Method</div>
+                    <div class="detail-value">{{ order.payment_method }}</div>
+                </div>
+
+                {% if order.special_instructions %}
+                <div class="delivery-detail-block">
+                    <div class="detail-label"><i class="fa-solid fa-note-sticky"></i> Delivery Note</div>
+                    <div class="detail-value">{{ order.special_instructions }}</div>
+                </div>
+                {% endif %}
+
+                <div class="receipt-actions">
+                    <a href="{{ url_for('restaurant_detail', restaurant_id=order.restaurant_id) }}" class="btn-order-again">
+                        <i class="fa-solid fa-rotate-right"></i> Order Again from Restaurant
+                    </a>
+                    <a href="{{ url_for('index') }}" class="btn-return-home">
+                        <i class="fa-solid fa-house"></i> Back to Explore
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

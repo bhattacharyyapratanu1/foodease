@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}FoodEase – Discover & Order Exceptional Local Food{% endblock %}
+
+{% block content %}
+
+<!-- ===== Ultra-Premium Hero Section ===== -->
+<section class="hero-section">
+    <div class="hero-bg-overlay"></div>
+    <div class="container hero-container">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="pulse-dot"></span>
+                <span>Bengaluru's Curated Gourmet Delivery</span>
+            </div>
+
+            <h1 class="hero-title">
+                Savor exceptional food, <br/>
+                <span class="gradient-text">delivered instantly.</span>
+            </h1>
+
+            <p class="hero-subtitle">
+                Explore handcrafted recipes from Bengaluru’s highest-rated artisan kitchens, award-winning chefs, and authentic street masters.
+            </p>
+
+            <!-- Search and Filter Bar -->
+            <form class="hero-search-form" action="{{ url_for('index') }}" method="GET">
+                <div class="search-input-wrapper">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input
+                        type="text"
+                        name="q"
+                        class="hero-search-input"
+                        placeholder="Search for restaurants, dishes, or cuisines (e.g. Biryani, Pizza, Ramen)..."
+                        value="{{ search_query }}"
+                    />
+                    {% if search_query %}
+                    <a href="{{ url_for('index') }}" class="clear-search-btn" title="Clear search">
+                        <i class="fa-solid fa-xmark"></i>
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Hidden inputs to preserve existing filters -->
+                {% if active_cuisine and active_cuisine != 'All' %}
+                    <input type="hidden" name="cuisine" value="{{ active_cuisine }}">
+                {% endif %}
+                {% if veg_only %}
+                    <input type="hidden" name="veg" value="1">
+                {% endif %}
+
+                <button type="submit" class="hero-search-btn">
+                    <span>Find Food</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <!-- Quick tags -->
+            <div class="hero-quick-tags">
+                <span class="quick-tags-label">Popular cravings:</span>
+                <a href="{{ url_for('index', q='Biryani') }}" class="tag-pill">🍛 Biryani</a>
+                <a href="{{ url_for('index', q='Pizza') }}" class="tag-pill">🍕 Wood-Fired Pizza</a>
+                <a href="{{ url_for('index', q='Burger') }}" class="tag-pill">🍔 Smash Burgers</a>
+                <a href="{{ url_for('index', q='Sushi') }}" class="tag-pill">🍣 Sushi</a>
+                <a href="{{ url_for('index', q='Dosa') }}" class="tag-pill">🥞 Ghee Dosa</a>
+                <a href="{{ url_for('index', q='Tacos') }}" class="tag-pill">🌮 Tacos</a>
+            </div>
+
+            <!-- Hero Highlights Stats -->
+            <div class="hero-stats-row">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="stat-info">
+                        <strong>25-35 Mins</strong>
+                        <span>Average Arrival</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+                    <div class="stat-info">
+                        <strong>4.8+ Stars</strong>
+                        <span>Verified Foodies</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-motorcycle"></i></div>
+                    <div class="stat-info">
+                        <strong>Free Delivery</strong>
+                        <span>On Orders > ₹500</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== Cuisine Category Strip ===== -->
+<section class="cuisine-strip-section">
+    <div class="container">
+        <div class="section-header-compact">
+            <h2 class="compact-title">Browse by Cuisine</h2>
+            <span class="compact-subtitle">Taste the world from the comfort of home</span>
+        </div>
+
+        <div class="cuisine-carousel">
+            {% set cuisine_icons = {
+                'All': 'fa-utensils',
+                'Indian': 'fa-bowl-rice',
+                'Italian': 'fa-pizza-slice',
+                'American': 'fa-burger',
+                'Japanese': 'fa-fish-fins',
+                'Chinese': 'fa-bowl-food',
+                'Mexican': 'fa-pepper-hot',
+                'Healthy': 'fa-seedling',
+                'Bakery': 'fa-bread-slice',
+                'South Indian': 'fa-mug-hot',
+                'Middle Eastern': 'fa-fire-burner'
+            } %}
+
+            {% for c in cuisines_list %}
+            <a href="{{ url_for('index', cuisine=c, q=search_query, sort=active_sort, veg=(1 if veg_only else None)) }}"
+               class="cuisine-pill-card {% if active_cuisine == c %}active{% endif %}">
+                <div class="cuisine-pill-icon">
+                    <i class="fa-solid {{ cuisine_icons.get(c, 'fa-utensils') }}"></i>
+                </div>
+                <span class="cuisine-pill-name">{{ c }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ===== Main Restaurant Discovery Section ===== -->
+<section class="restaurants-section" id="restaurantsContainer">
+    <div class="container">
+        <!-- Control Bar: Counts, Filters, and Sort -->
+        <div class="discovery-controls-bar">
+            <div class="controls-left">
+                <h2 class="results-heading">
+                    {% if search_query %}
+                        Results for "<span class="highlight-text">{{ search_query }}</span>"
+                    {% elif active_cuisine and active_cuisine != 'All' %}
+                        {{ active_cuisine }} Restaurants
+                    {% else %}
+                        Featured Restaurants
+                    {% endif %}
+                </h2>
+                <span class="results-count-badge">{{ total_count }} places near you</span>
+            </div>
+
+            <div class="controls-right">
+                <!-- Veg Only Toggle Button -->
+                <a href="{{ url_for('index', cuisine=active_cuisine, q=search_query, sort=active_sort, veg=(None if veg_only else 1)) }}"
+                   class="filter-toggle-btn {% if veg_only %}active-veg{% endif %}"
+                   title="Toggle pure vegetarian choices">
+                    <span class="veg-dot"></span>
+                    <span>Veg Specialities</span>
+                </a>
+
+                <!-- Sorting Dropdown -->
+                <div class="sort-dropdown-wrapper">
+                    <label for="sortSelect" class="sort-label">Sort by:</label>
+                    <select id="sortSelect" class="sort-select" onchange="window.location.href=this.value;">
+                        <option value="{{ url_for('index', cuisine=active_cuisine, q=search_query, sort='rating', veg=(1 if veg_only else None)) }}"
+                                {% if active_sort == 'rating' %}selected{% endif %}>
+                            ⭐ Highest Rated
+                        </option>
+                        <option value="{{ url_for('index', cuisine=active_cuisine, q=search_query, sort='fastest', veg=(1 if veg_only else None)) }}"
+                                {% if active_sort == 'fastest' %}selected{% endif %}>
+                            ⚡ Fastest Delivery
+                        </option>
+                        <option value="{{ url_for('index', cuisine=active_cuisine, q=search_query, sort='delivery_fee', veg=(1 if veg_only else None)) }}"
+                                {% if active_sort == 'delivery_fee' %}selected{% endif %}>
+                            🛵 Lowest Delivery Fee
+                        </option>
+                        <option value="{{ url_for('index', cuisine=active_cuisine, q=search_query, sort='min_order', veg=(1 if veg_only else None)) }}"
+                                {% if active_sort == 'min_order' %}selected{% endif %}>
+                            💰 Lowest Minimum Order
+                        </option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Filter Pills Bar (If filters applied) -->
+        {% if search_query or (active_cuisine and active_cuisine != 'All') or veg_only %}
+        <div class="active-filter-chips">
+            <span class="active-filters-label">Active filters:</span>
+            {% if search_query %}
+            <span class="filter-chip">
+                Search: "{{ search_query }}"
+                <a href="{{ url_for('index', cuisine=active_cuisine, sort=active_sort, veg=(1 if veg_only else None)) }}">✕</a>
+            </span>
+            {% endif %}
+            {% if active_cuisine and active_cuisine != 'All' %}
+            <span class="filter-chip">
+                Cuisine: {{ active_cuisine }}
+                <a href="{{ url_for('index', q=search_query, sort=active_sort, veg=(1 if veg_only else None)) }}">✕</a>
+            </span>
+            {% endif %}
+            {% if veg_only %}
+            <span class="filter-chip">
+                🟢 Veg Only
+                <a href="{{ url_for('index', cuisine=active_cuisine, q=search_query, sort=active_sort) }}">✕</a>
+            </span>
+            {% endif %}
+            <a href="{{ url_for('index') }}" class="clear-all-link">Clear all filters</a>
+        </div>
+        {% endif %}
+
+        <!-- Restaurant Cards Grid -->
+        {% if restaurants %}
+        <div class="restaurant-grid">
+            {% for r in restaurants %}
+            <article class="restaurant-card">
+                <a href="{{ url_for('restaurant_detail', restaurant_id=r.id) }}" class="card-img-link">
+                    <div class="card-img-container">
+                        <img src="{{ r.image }}" alt="{{ r.name }}" class="card-img" loading="lazy" />
+                        <div class="card-img-gradient"></div>
+
+                        <!-- Top Badges -->
+                        <div class="card-top-badges">
+                            {% if r.is_featured %}
+                                <span class="badge-featured"><i class="fa-solid fa-crown"></i> Chef Choice</span>
+                            {% endif %}
+                            <span class="badge-rating">
+                                <i class="fa-solid fa-star"></i> {{ r.rating }}
+                                <span class="review-count">({{ r.review_count }})</span>
+                            </span>
+                        </div>
+
+                        <!-- Bottom Image Info (Delivery Time & Price Level) -->
+                        <div class="card-bottom-badges">
+                            <span class="badge-delivery-time">
+                                <i class="fa-solid fa-clock"></i> {{ r.delivery_time }}
+                            </span>
+                            <span class="badge-price-level">{{ r.price_level }}</span>
+                        </div>
+                    </div>
+                </a>
+
+                <div class="card-body">
+                    <div class="card-header-row">
+                        <h3 class="restaurant-name">
+                            <a href="{{ url_for('restaurant_detail', restaurant_id=r.id) }}">{{ r.name }}</a>
+                        </h3>
+                        <span class="cuisine-badge">{{ r.cuisine }}</span>
+                    </div>
+
+                    <p class="restaurant-desc">{{ r.description }}</p>
+
+                    <div class="restaurant-meta-details">
+                        <div class="meta-item">
+                            <i class="fa-solid fa-motorcycle"></i>
+                            <span>
+                                {% if r.delivery_fee == 0 %}
+                                    <strong class="text-green">Free Delivery</strong>
+                                {% else %}
+                                    ₹{{ r.delivery_fee|int }} Delivery
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="meta-divider">•</div>
+                        <div class="meta-item">
+                            <i class="fa-solid fa-bag-shopping"></i>
+                            <span>Min ₹{{ r.min_order|int }}</span>
+                        </div>
+                    </div>
+
+                    <div class="card-footer-action">
+                        <a href="{{ url_for('restaurant_detail', restaurant_id=r.id) }}" class="btn-card-action">
+                            <span>View Full Menu</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state-card">
+            <div class="empty-icon"><i class="fa-solid fa-utensils"></i></div>
+            <h3>No restaurants matched your filters</h3>
+            <p>Try adjusting your search terms, exploring a different cuisine, or resetting your filters.</p>
+            <a href="{{ url_for('index') }}" class="btn-empty-reset">Reset All Filters</a>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+
+<!-- ===== Promo Banner: 20% OFF ===== -->
+<section class="promo-banner-section">
+    <div class="container">
+        <div class="promo-banner-card">
+            <div class="promo-text-col">
+                <span class="promo-tag">LIMITED SPECIAL OFFER</span>
+                <h3 class="promo-title">Get 20% OFF on your gourmet order</h3>
+                <p class="promo-desc">Use coupon code <span class="promo-coupon-code">EASE20</span> during checkout for instant savings across all partner restaurants.</p>
+            </div>
+            <div class="promo-cta-col">
+                <a href="#restaurantsContainer" class="btn-promo-action">Order Now & Save</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== Why FoodEase (Features Section) ===== -->
+<section class="features-section">
+    <div class="container">
+        <div class="section-header-center">
+            <span class="section-pill">Why Diners Choose FoodEase</span>
+            <h2 class="section-heading">Designed for people who love extraordinary food</h2>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon-wrapper icon-orange">
+                    <i class="fa-solid fa-kitchen-set"></i>
+                </div>
+                <h3 class="feature-title">Curated Kitchens Only</h3>
+                <p class="feature-desc">We personally inspect and partner with high-hygiene, top-rated artisanal restaurants that pride themselves on quality.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon-wrapper icon-yellow">
+                    <i class="fa-solid fa-bolt-lightning"></i>
+                </div>
+                <h3 class="feature-title">Lightning Rapid Delivery</h3>
+                <p class="feature-desc">Dedicated thermal-bag couriers ensure your wood-fired pizzas stay crisp and your ramen broths stay piping hot.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon-wrapper icon-blue">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                </div>
+                <h3 class="feature-title">Live Kitchen Tracking</h3>
+                <p class="feature-desc">Follow your order in real-time from the moment the chef starts cooking until the courier knocks on your door.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon-wrapper icon-green">
+                    <i class="fa-solid fa-shield-heart"></i>
+                </div>
+                <h3 class="feature-title">Zero Hidden Fees</h3>
+                <p class="feature-desc">Transparent billing, zero surge markups on food prices, and complimentary delivery on orders over ₹500.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

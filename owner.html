@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Owner Dashboard – FoodEase{% endblock %}
+
+{% block content %}
+<div class="dashboard-page-container">
+    <div class="container dashboard-container">
+
+        <!-- Header -->
+        <div class="dash-header-row">
+            <div>
+                <span class="dash-badge"><i class="fa-solid fa-store"></i> Restaurant Management Console</span>
+                <h1 class="dash-title">
+                    {{ restaurant.name if restaurant else 'Restaurant Dashboard' }}
+                </h1>
+                <p class="dash-subtitle">Welcome back, <strong>{{ session.user_name }}</strong>! Here's how your kitchen is performing today.</p>
+            </div>
+
+            <div class="dash-header-actions">
+                <a href="{{ url_for('restaurant_detail', restaurant_id=(restaurant.id if restaurant else 1)) }}" class="btn-dash-action" target="_blank">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> View Live Menu Page
+                </a>
+            </div>
+        </div>
+
+        <!-- 4 KPI Metrics -->
+        <div class="dash-kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-icon-box kpi-green"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Total Revenue</span>
+                    <strong class="kpi-value">₹{{ total_revenue|int }}</strong>
+                    <span class="kpi-trend text-green"><i class="fa-solid fa-arrow-trend-up"></i> +14.2% this week</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-icon-box kpi-orange"><i class="fa-solid fa-bell"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Active Orders</span>
+                    <strong class="kpi-value">{{ active_orders }}</strong>
+                    <span class="kpi-trend text-orange">Kitchen processing</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-icon-box kpi-blue"><i class="fa-solid fa-bag-shopping"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Lifetime Orders</span>
+                    <strong class="kpi-value">{{ total_orders }}</strong>
+                    <span class="kpi-trend text-blue">Across platform</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-icon-box kpi-purple"><i class="fa-solid fa-utensils"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Menu Items</span>
+                    <strong class="kpi-value">{{ menu_count }}</strong>
+                    <span class="kpi-trend text-purple">Active dishes listed</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Orders Table with Status Update Form -->
+        <div class="dash-panel-card">
+            <div class="panel-card-header">
+                <div class="panel-title-group">
+                    <h2 class="panel-title">Incoming & Recent Kitchen Orders</h2>
+                    <span class="panel-subtitle">Manage fulfillment stages in real time</span>
+                </div>
+                <span class="panel-badge">{{ orders|length }} orders</span>
+            </div>
+
+            {% if orders %}
+            <div class="dash-table-wrapper">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Order #</th>
+                            <th>Customer</th>
+                            <th>Amount</th>
+                            <th>Payment</th>
+                            <th>Current Status</th>
+                            <th>Update Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ord in orders %}
+                        <tr>
+                            <td>
+                                <strong class="font-mono">#{{ ord.order_number }}</strong>
+                                <span class="table-sub-date">{{ ord.created_at }}</span>
+                            </td>
+                            <td>
+                                <div class="table-cust-name">{{ ord.customer_name or 'Diner' }}</div>
+                                <span class="table-cust-phone">{{ ord.customer_phone or 'Verified customer' }}</span>
+                            </td>
+                            <td>
+                                <strong class="table-amount">₹{{ ord.total_amount|int }}</strong>
+                            </td>
+                            <td>
+                                <span class="payment-type-badge">{{ ord.payment_method }}</span>
+                            </td>
+                            <td>
+                                <span class="status-badge status-{{ ord.status }}">
+                                    <span class="status-dot"></span>
+                                    {{ ord.status.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                            <td>
+                                <form action="{{ url_for('update_owner_order_status', order_id=ord.id) }}" method="POST" class="inline-status-form">
+                                    <select name="status" class="status-select-input">
+                                        <option value="confirmed" {% if ord.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                                        <option value="preparing" {% if ord.status == 'preparing' %}selected{% endif %}>Preparing</option>
+                                        <option value="out_for_delivery" {% if ord.status == 'out_for_delivery' %}selected{% endif %}>Out for Delivery</option>
+                                        <option value="delivered" {% if ord.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                                        <option value="cancelled" {% if ord.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                    </select>
+                                    <button type="submit" class="btn-table-update">Update</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="dash-empty-notice">
+                <i class="fa-solid fa-receipt"></i>
+                <p>No active orders currently pending for this restaurant.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Menu Performance Table -->
+        <div class="dash-panel-card">
+            <div class="panel-card-header">
+                <div class="panel-title-group">
+                    <h2 class="panel-title">Menu Items & Popularity</h2>
+                    <span class="panel-subtitle">Review top-selling dishes and pricing</span>
+                </div>
+            </div>
+
+            <div class="dash-table-wrapper">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Dish</th>
+                            <th>Category</th>
+                            <th>Type</th>
+                            <th>Price</th>
+                            <th>Rating</th>
+                            <th>Total Sold</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in menu_items %}
+                        <tr>
+                            <td>
+                                <div class="table-dish-row">
+                                    <img src="{{ m.image }}" alt="{{ m.name }}" class="table-dish-thumb" />
+                                    <div>
+                                        <strong>{{ m.name }}</strong>
+                                        {% if m.badge %}
+                                            <span class="mini-badge">{{ m.badge }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ m.category }}</td>
+                            <td>
+                                {% if m.is_veg %}
+                                    <span class="text-green font-bold">🟢 Veg</span>
+                                {% else %}
+                                    <span class="text-red font-bold">🔴 Non-Veg</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if m.discount_price %}
+                                    <strong>₹{{ m.discount_price|int }}</strong>
+                                    <span class="price-strikethrough">₹{{ m.price|int }}</span>
+                                {% else %}
+                                    <strong>₹{{ m.price|int }}</strong>
+                                {% endif %}
+                            </td>
+                            <td>⭐ {{ m.rating }}</td>
+                            <td><strong>{{ m.order_count }}+</strong> orders</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

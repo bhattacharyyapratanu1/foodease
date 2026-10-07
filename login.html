@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Log In – FoodEase{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-brand-icon">
+                <i class="fa-solid fa-utensils"></i>
+            </div>
+            <h1 class="auth-title">Welcome Back</h1>
+            <p class="auth-subtitle">Sign in to track orders, saved addresses & exclusive offers</p>
+        </div>
+
+        <!-- Quick Demo Login Helpers -->
+        <div class="demo-login-box">
+            <span class="demo-label">✨ Quick 1-Click Demo Logins:</span>
+            <div class="demo-chips-grid">
+                <button type="button" class="demo-chip" onclick="fillDemo('customer@foodease.com', 'password123')">
+                    <i class="fa-solid fa-user"></i> Customer
+                </button>
+                <button type="button" class="demo-chip" onclick="fillDemo('owner@foodease.com', 'password123')">
+                    <i class="fa-solid fa-store"></i> Restaurant Owner
+                </button>
+                <button type="button" class="demo-chip" onclick="fillDemo('admin@foodease.com', 'password123')">
+                    <i class="fa-solid fa-shield-halved"></i> Platform Admin
+                </button>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('login') }}" class="auth-form" novalidate>
+            <!-- Email -->
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address</label>
+                <div class="input-with-icon">
+                    <i class="fa-solid fa-envelope input-icon"></i>
+                    <input
+                        type="email" id="email" name="email"
+                        class="form-input"
+                        placeholder="you@example.com"
+                        value="{{ form_email }}"
+                        required
+                        autofocus
+                    />
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div class="form-group">
+                <div class="label-row-split">
+                    <label for="password" class="form-label">Password</label>
+                    <span class="password-hint">Default: password123</span>
+                </div>
+                <div class="input-with-icon">
+                    <i class="fa-solid fa-lock input-icon"></i>
+                    <input
+                        type="password" id="password" name="password"
+                        class="form-input"
+                        placeholder="Enter your password"
+                        required
+                    />
+                    <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility('password', this)" title="Toggle password">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-auth-submit">
+                <span>Sign In to FoodEase</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <div class="auth-footer-text">
+            <span>New to FoodEase?</span>
+            <a href="{{ url_for('register') }}" class="auth-link">Create a free account</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function fillDemo(email, pwd) {
+        document.getElementById('email').value = email;
+        document.getElementById('password').value = pwd;
+
+        // Visual flash highlight
+        const form = document.querySelector('.auth-form');
+        form.classList.add('demo-filled-pulse');
+        setTimeout(() => form.classList.remove('demo-filled-pulse'), 400);
+    }
+
+    function togglePasswordVisibility(fieldId, btn) {
+        const field = document.getElementById(fieldId);
+        const icon = btn.querySelector('i');
+        if (field.type === 'password') {
+            field.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            field.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Your Cart – FoodEase{% endblock %}
+
+{% block content %}
+<div class="cart-page-section">
+    <div class="container cart-container">
+
+        {% if items %}
+        <div class="cart-page-header">
+            <h1 class="cart-title">Review Your Order</h1>
+            {% if restaurant %}
+            <div class="cart-restaurant-banner">
+                <div class="cart-rest-avatar">
+                    <img src="{{ restaurant.image }}" alt="{{ restaurant.name }}" />
+                </div>
+                <div class="cart-rest-meta">
+                    <span class="sub-label">Ordering from</span>
+                    <h3 class="rest-name">
+                        <a href="{{ url_for('restaurant_detail', restaurant_id=restaurant.id) }}">{{ restaurant.name }}</a>
+                    </h3>
+                    <span class="rest-eta"><i class="fa-solid fa-clock"></i> {{ restaurant.delivery_time }} delivery</span>
+                </div>
+                <a href="{{ url_for('restaurant_detail', restaurant_id=restaurant.id) }}" class="btn-add-more">
+                    <i class="fa-solid fa-plus"></i> Add More Items
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="cart-two-col-layout">
+            <!-- Left Column: Items List -->
+            <div class="cart-items-card">
+                <div class="cart-items-header">
+                    <h3>Dishes in Your Bag</h3>
+                    <button type="button" class="btn-clear-cart" onclick="clearCart()">
+                        <i class="fa-solid fa-trash-can"></i> Clear Bag
+                    </button>
+                </div>
+
+                <div class="cart-items-list">
+                    {% for item in items %}
+                    <div class="cart-item-row" id="cartRow-{{ item.food_item.id }}">
+                        <div class="item-img-cell">
+                            <img src="{{ item.food_item.image }}" alt="{{ item.food_item.name }}" />
+                        </div>
+
+                        <div class="item-info-cell">
+                            <div class="item-diet-row">
+                                <span class="diet-icon {% if item.food_item.is_veg %}diet-veg{% else %}diet-non-veg{% endif %}">
+                                    <span class="diet-dot"></span>
+                                </span>
+                                <h4 class="item-name">{{ item.food_item.name }}</h4>
+                            </div>
+                            <span class="item-unit-price">₹{{ item.effective_price|int }} each</span>
+                        </div>
+
+                        <div class="item-stepper-cell">
+                            <div class="cart-stepper">
+                                <button type="button" class="stepper-btn" onclick="updateCartItem({{ item.food_item.id }}, 'decrease')">
+                                    <i class="fa-solid fa-minus"></i>
+                                </button>
+                                <span class="stepper-val" id="itemQty-{{ item.food_item.id }}">{{ item.quantity }}</span>
+                                <button type="button" class="stepper-btn" onclick="updateCartItem({{ item.food_item.id }}, 'increase')">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="item-total-cell">
+                            <strong class="item-subtotal-price" id="rowSubtotal-{{ item.food_item.id }}">
+                                ₹{{ item.item_total|int }}
+                            </strong>
+                            <button type="button" class="item-remove-btn" onclick="updateCartItem({{ item.food_item.id }}, 'remove')" title="Remove item">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Special instructions hint -->
+                <div class="delivery-tip-banner">
+                    <i class="fa-solid fa-utensils"></i>
+                    <span>All meals are packed in eco-friendly tamper-proof thermal containers.</span>
+                </div>
+            </div>
+
+            <!-- Right Column: Bill Details & Checkout CTA -->
+            <div class="cart-summary-card">
+                <h3 class="summary-card-title">Order Summary</h3>
+
+                <!-- Free delivery banner -->
+                {% if subtotal < 500 %}
+                <div class="free-delivery-perk">
+                    <div class="perk-text">
+                        <i class="fa-solid fa-truck-fast"></i>
+                        <span>Add <strong>₹{{ (500 - subtotal)|int }}</strong> more for <strong>FREE Delivery</strong></span>
+                    </div>
+                    <div class="perk-progress-bar">
+                        <div class="perk-fill" style="width: {{ (subtotal / 500) * 100 }}%;"></div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="free-delivery-unlocked">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>You've unlocked <strong>FREE Delivery!</strong> 🎉</span>
+                </div>
+                {% endif %}
+
+                <!-- Coupon Box -->
+                <div class="coupon-box-wrapper">
+                    <div class="coupon-input-group">
+                        <i class="fa-solid fa-tag coupon-icon"></i>
+                        <input type="text" id="couponInput" class="coupon-input" placeholder="Promo code (e.g. EASE20)" />
+                        <button type="button" class="btn-apply-coupon" onclick="applyPromoCode()">Apply</button>
+                    </div>
+                    <div id="couponMessage" class="coupon-message"></div>
+                </div>
+
+                <!-- Price breakdown table -->
+                <div class="summary-breakdown">
+                    <div class="breakdown-row">
+                        <span class="row-label">Item Total</span>
+                        <span class="row-val" id="summarySubtotal">₹{{ subtotal|int }}</span>
+                    </div>
+
+                    <div class="breakdown-row">
+                        <span class="row-label">Delivery Partner Fee</span>
+                        <span class="row-val" id="summaryDelivery">
+                            {% if delivery_fee == 0 %}
+                                <span class="text-green font-bold">FREE</span>
+                            {% else %}
+                                ₹{{ delivery_fee|int }}
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="breakdown-row">
+                        <span class="row-label">Govt. Taxes (5% GST)</span>
+                        <span class="row-val" id="summaryTax">₹{{ tax|int }}</span>
+                    </div>
+
+                    <div class="breakdown-row discount-row" id="discountRow" style="display: none;">
+                        <span class="row-label text-green">Promo Code Discount</span>
+                        <span class="row-val text-green" id="summaryDiscount">-₹0</span>
+                    </div>
+
+                    <div class="breakdown-divider"></div>
+
+                    <div class="breakdown-row total-row">
+                        <span class="total-label">Grand Total</span>
+                        <span class="total-val" id="summaryGrandTotal">₹{{ total|int }}</span>
+                    </div>
+                </div>
+
+                <!-- Checkout CTA -->
+                <a href="{{ url_for('checkout') }}" class="btn-checkout-primary">
+                    <span>Proceed to Checkout</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+
+                <div class="checkout-guarantee">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>256-Bit Encrypted Secure Checkout</span>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Empty Cart State -->
+        <div class="cart-empty-state">
+            <div class="empty-cart-illustration">
+                <i class="fa-solid fa-bag-shopping"></i>
+            </div>
+            <h2 class="empty-title">Your shopping bag is empty</h2>
+            <p class="empty-subtitle">Good food is waiting for you! Explore our top curated local restaurants and fill up your cart.</p>
+            <a href="{{ url_for('index') }}" class="btn-back-to-menu">
+                <i class="fa-solid fa-compass"></i> Discover Restaurants
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

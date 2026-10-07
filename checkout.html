@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout – FoodEase{% endblock %}
+
+{% block content %}
+<div class="checkout-page-section">
+    <div class="container checkout-container">
+
+        <div class="checkout-header">
+            <h1 class="checkout-title">Finalize Your Delivery</h1>
+            <p class="checkout-subtitle">Almost there! Confirm your delivery address and choose a payment method.</p>
+        </div>
+
+        <form action="{{ url_for('checkout') }}" method="POST" class="checkout-form">
+            <div class="checkout-grid-layout">
+                <!-- Left Column: Delivery & Payment Details -->
+                <div class="checkout-steps-col">
+
+                    <!-- Step 1: Delivery Address -->
+                    <div class="checkout-card">
+                        <div class="card-step-title">
+                            <span class="step-num">1</span>
+                            <h3>Delivery Address</h3>
+                        </div>
+
+                        <div class="form-group-checkout">
+                            <label class="checkout-label" for="address">Full Street Address & Landmark</label>
+                            <textarea
+                                id="address"
+                                name="delivery_address"
+                                rows="3"
+                                class="checkout-textarea"
+                                placeholder="House / Flat No., Apartment Name, Street, Landmark, Area, Bengaluru..."
+                                required
+                            >{{ user.address if user and user.address else '402, Sunshine Heights, Indiranagar, Bengaluru' }}</textarea>
+                            <span class="field-hint"><i class="fa-solid fa-circle-info"></i> Accurate addresses ensure your food arrives within 30 minutes.</span>
+                        </div>
+
+                        <div class="form-row-two-col">
+                            <div class="form-group-checkout">
+                                <label class="checkout-label">Contact Name</label>
+                                <input type="text" class="checkout-input" value="{{ user.name if user else '' }}" readonly />
+                            </div>
+                            <div class="form-group-checkout">
+                                <label class="checkout-label">Contact Phone</label>
+                                <input type="text" class="checkout-input" value="{{ user.phone if user and user.phone else '+91 98765 00001' }}" readonly />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Payment Method Selection -->
+                    <div class="checkout-card">
+                        <div class="card-step-title">
+                            <span class="step-num">2</span>
+                            <h3>Select Payment Method</h3>
+                        </div>
+
+                        <div class="payment-methods-grid">
+                            <!-- UPI -->
+                            <label class="payment-option selected-payment">
+                                <input type="radio" name="payment_method" value="UPI (GPay / PhonePe / Paytm)" checked />
+                                <div class="payment-icon-box"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                                <div class="payment-details">
+                                    <strong>UPI Instant Pay</strong>
+                                    <span>Google Pay, PhonePe, Paytm, BHIM</span>
+                                </div>
+                                <i class="fa-solid fa-circle-check check-marker"></i>
+                            </label>
+
+                            <!-- Credit / Debit Card -->
+                            <label class="payment-option">
+                                <input type="radio" name="payment_method" value="Credit / Debit Card" />
+                                <div class="payment-icon-box"><i class="fa-solid fa-credit-card"></i></div>
+                                <div class="payment-details">
+                                    <strong>Credit or Debit Card</strong>
+                                    <span>Visa, Mastercard, RuPay, Amex</span>
+                                </div>
+                                <i class="fa-solid fa-circle-check check-marker"></i>
+                            </label>
+
+                            <!-- Cash on Delivery -->
+                            <label class="payment-option">
+                                <input type="radio" name="payment_method" value="Cash on Delivery" />
+                                <div class="payment-icon-box"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                                <div class="payment-details">
+                                    <strong>Cash on Delivery</strong>
+                                    <span>Pay with cash or UPI on doorstep arrival</span>
+                                </div>
+                                <i class="fa-solid fa-circle-check check-marker"></i>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Special Delivery Instructions -->
+                    <div class="checkout-card">
+                        <div class="card-step-title">
+                            <span class="step-num">3</span>
+                            <h3>Delivery Instructions (Optional)</h3>
+                        </div>
+
+                        <div class="form-group-checkout">
+                            <textarea
+                                name="special_instructions"
+                                rows="2"
+                                class="checkout-textarea"
+                                placeholder="e.g. Ring the bell twice, leave with security guard, avoid single-use plastic cutlery..."
+                            ></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Order Review Sidebar -->
+                <div class="checkout-summary-col">
+                    <div class="checkout-summary-card sticky-sidebar">
+                        <h3 class="summary-title">Order Overview</h3>
+
+                        {% if restaurant %}
+                        <div class="checkout-rest-info">
+                            <img src="{{ restaurant.image }}" alt="{{ restaurant.name }}" class="checkout-rest-img" />
+                            <div>
+                                <h4 class="rest-name">{{ restaurant.name }}</h4>
+                                <span class="rest-cuisine">{{ restaurant.cuisine }} Cuisine</span>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Compact items list -->
+                        <div class="checkout-items-preview">
+                            {% for item in items %}
+                            <div class="preview-item-row">
+                                <span class="item-qty-name">
+                                    <span class="qty-bubble">{{ item.quantity }}x</span>
+                                    {{ item.food_item.name }}
+                                </span>
+                                <span class="item-total-price">₹{{ item.item_total|int }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="checkout-divider"></div>
+
+                        <!-- Bill calculation -->
+                        <div class="checkout-calc-rows">
+                            <div class="calc-row">
+                                <span>Subtotal</span>
+                                <span>₹{{ subtotal|int }}</span>
+                            </div>
+                            <div class="calc-row">
+                                <span>Delivery Fee</span>
+                                <span>
+                                    {% if delivery_fee == 0 %}
+                                        <strong class="text-green">FREE</strong>
+                                    {% else %}
+                                        ₹{{ delivery_fee|int }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="calc-row">
+                                <span>GST (5%)</span>
+                                <span>₹{{ tax|int }}</span>
+                            </div>
+
+                            <div class="checkout-divider"></div>
+
+                            <div class="calc-row total-calc-row">
+                                <strong>To Pay</strong>
+                                <strong class="total-amount-highlight">₹{{ total|int }}</strong>
+                            </div>
+                        </div>
+
+                        <!-- Place Order Button -->
+                        <button type="submit" class="btn-place-order">
+                            <i class="fa-solid fa-lock"></i>
+                            <span>Place Order & Pay ₹{{ total|int }}</span>
+                        </button>
+
+                        <p class="order-terms-hint">
+                            By placing your order, you agree to FoodEase's Terms of Service and refund policy.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Visual toggle for payment option radio cards
+    document.querySelectorAll('.payment-option input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected-payment'));
+            if (this.checked) {
+                this.closest('.payment-option').classList.add('selected-payment');
+            }
+        });
+    });
+</script>
+{% endblock %}

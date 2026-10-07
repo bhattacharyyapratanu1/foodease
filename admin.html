@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Platform Admin – FoodEase{% endblock %}
+
+{% block content %}
+<div class="dashboard-page-container">
+    <div class="container dashboard-container">
+
+        <!-- Header -->
+        <div class="dash-header-row">
+            <div>
+                <span class="dash-badge admin-badge"><i class="fa-solid fa-shield-halved"></i> FoodEase Executive Admin Console</span>
+                <h1 class="dash-title">Platform Master Overview</h1>
+                <p class="dash-subtitle">High-level operational KPIs, order fulfillment statistics, and partner metrics.</p>
+            </div>
+            <div class="dash-header-actions">
+                <span class="platform-health-tag"><i class="fa-solid fa-circle-check"></i> All Services Operational</span>
+            </div>
+        </div>
+
+        <!-- 4 Platform KPI Metrics -->
+        <div class="dash-kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-icon-box kpi-green"><i class="fa-solid fa-coins"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Platform GMV</span>
+                    <strong class="kpi-value">₹{{ stats.total_revenue|int }}</strong>
+                    <span class="kpi-trend text-green"><i class="fa-solid fa-arrow-trend-up"></i> +24% YoY growth</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-icon-box kpi-orange"><i class="fa-solid fa-receipt"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Total Orders Placed</span>
+                    <strong class="kpi-value">{{ stats.total_orders }}</strong>
+                    <span class="kpi-trend text-orange">Across all restaurants</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-icon-box kpi-blue"><i class="fa-solid fa-store"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Active Restaurants</span>
+                    <strong class="kpi-value">{{ stats.total_restaurants }}</strong>
+                    <span class="kpi-trend text-blue">Verified partners</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-icon-box kpi-purple"><i class="fa-solid fa-users"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Registered Diners</span>
+                    <strong class="kpi-value">{{ stats.total_users }}</strong>
+                    <span class="kpi-trend text-purple">Active foodies</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-dual-grid">
+            <!-- Left: Top Performing Restaurants -->
+            <div class="dash-panel-card">
+                <div class="panel-card-header">
+                    <div class="panel-title-group">
+                        <h2 class="panel-title">Top Revenue Generating Kitchens</h2>
+                        <span class="panel-subtitle">Ranked by total orders and sales volume</span>
+                    </div>
+                </div>
+
+                <div class="admin-top-list">
+                    {% for tr in stats.top_restaurants %}
+                    <div class="admin-top-item">
+                        <div class="top-item-info">
+                            <span class="top-rank-num">#{{ loop.index }}</span>
+                            <div>
+                                <strong class="top-item-name">{{ tr.name }}</strong>
+                                <span class="top-item-meta">{{ tr.cuisine }} • ⭐ {{ tr.rating }}</span>
+                            </div>
+                        </div>
+                        <div class="top-item-sales">
+                            <strong>₹{{ tr.total_sales|int }}</strong>
+                            <span>{{ tr.order_count }} orders</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Right: Recent Platform Orders -->
+            <div class="dash-panel-card">
+                <div class="panel-card-header">
+                    <div class="panel-title-group">
+                        <h2 class="panel-title">Live Platform Orders</h2>
+                        <span class="panel-subtitle">Latest incoming requests across the city</span>
+                    </div>
+                </div>
+
+                <div class="admin-recent-orders-list">
+                    {% for ord in stats.recent_orders %}
+                    <div class="recent-order-feed-item">
+                        <div class="feed-icon">
+                            <i class="fa-solid fa-bag-shopping"></i>
+                        </div>
+                        <div class="feed-details">
+                            <div class="feed-row-top">
+                                <strong>#{{ ord.order_number }}</strong>
+                                <span class="status-badge status-{{ ord.status }}">{{ ord.status.replace('_', ' ').title() }}</span>
+                            </div>
+                            <span class="feed-sub">{{ ord.customer_name or 'Diner' }} ordered from <strong>{{ ord.restaurant_name }}</strong></span>
+                            <span class="feed-time">₹{{ ord.total_amount|int }} • {{ ord.created_at }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- All Restaurants Directory -->
+        <div class="dash-panel-card">
+            <div class="panel-card-header">
+                <div class="panel-title-group">
+                    <h2 class="panel-title">All Partner Restaurants Directory</h2>
+                    <span class="panel-subtitle">Comprehensive listing and direct navigation</span>
+                </div>
+                <span class="panel-badge">{{ restaurants|length }} registered</span>
+            </div>
+
+            <div class="dash-table-wrapper">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Restaurant</th>
+                            <th>Cuisine</th>
+                            <th>Rating</th>
+                            <th>Reviews</th>
+                            <th>Delivery Time</th>
+                            <th>Min Order</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in restaurants %}
+                        <tr>
+                            <td>
+                                <div class="table-dish-row">
+                                    <img src="{{ r.image }}" alt="{{ r.name }}" class="table-dish-thumb" />
+                                    <div>
+                                        <strong>{{ r.name }}</strong>
+                                        <span class="table-sub-date">{{ r.address.split(',')[0] }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="cuisine-pill-tag">{{ r.cuisine }}</span></td>
+                            <td>⭐ <strong>{{ r.rating }}</strong></td>
+                            <td>{{ r.review_count }} verified</td>
+                            <td><i class="fa-solid fa-clock"></i> {{ r.delivery_time }}</td>
+                            <td>₹{{ r.min_order|int }}</td>
+                            <td>
+                                <a href="{{ url_for('restaurant_detail', restaurant_id=r.id) }}" class="btn-table-view" target="_blank">
+                                    Menu <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

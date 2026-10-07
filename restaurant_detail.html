@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}{{ restaurant.name }} – FoodEase{% endblock %}
+
+{% block content %}
+
+<!-- ===== Restaurant Banner & Overview Header ===== -->
+<div class="restaurant-hero-header" style="background-image: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.88)), url('{{ restaurant.banner_image or restaurant.image }}');">
+    <div class="container restaurant-hero-container">
+        <!-- Back link -->
+        <a href="{{ url_for('index') }}" class="back-nav-link">
+            <i class="fa-solid fa-arrow-left"></i> Back to all restaurants
+        </a>
+
+        <div class="restaurant-header-card">
+            <div class="rest-thumb-wrapper">
+                <img src="{{ restaurant.image }}" alt="{{ restaurant.name }}" class="rest-thumb-img" />
+            </div>
+
+            <div class="rest-header-details">
+                <div class="rest-badges-row">
+                    <span class="cuisine-pill-tag">{{ restaurant.cuisine }}</span>
+                    {% if restaurant.is_featured %}
+                        <span class="chef-choice-tag"><i class="fa-solid fa-crown"></i> Chef's Choice</span>
+                    {% endif %}
+                    <span class="price-level-tag">{{ restaurant.price_level }}</span>
+                </div>
+
+                <h1 class="rest-title">{{ restaurant.name }}</h1>
+                <p class="rest-tagline">{{ restaurant.description }}</p>
+
+                <div class="rest-info-bar">
+                    <div class="info-metric highlight-metric">
+                        <i class="fa-solid fa-star"></i>
+                        <span class="metric-val">{{ restaurant.rating }}</span>
+                        <span class="metric-label">({{ restaurant.review_count }}+ reviews)</span>
+                    </div>
+
+                    <div class="info-metric-divider"></div>
+
+                    <div class="info-metric">
+                        <i class="fa-solid fa-clock"></i>
+                        <span class="metric-val">{{ restaurant.delivery_time }}</span>
+                        <span class="metric-label">Delivery</span>
+                    </div>
+
+                    <div class="info-metric-divider"></div>
+
+                    <div class="info-metric">
+                        <i class="fa-solid fa-motorcycle"></i>
+                        <span class="metric-val">
+                            {% if restaurant.delivery_fee == 0 %}
+                                Free
+                            {% else %}
+                                ₹{{ restaurant.delivery_fee|int }}
+                            {% endif %}
+                        </span>
+                        <span class="metric-label">Delivery fee</span>
+                    </div>
+
+                    <div class="info-metric-divider"></div>
+
+                    <div class="info-metric">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <span class="metric-val truncate-text" title="{{ restaurant.address }}">{{ restaurant.address.split(',')[0] }}</span>
+                        <span class="metric-label">Location</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Menu Navigation & Filter Strip ===== -->
+<nav class="menu-sticky-nav">
+    <div class="container menu-nav-container">
+        <!-- Category Tabs -->
+        <div class="category-tabs-scroll">
+            <a href="{{ url_for('restaurant_detail', restaurant_id=restaurant.id, category='All', veg=(1 if veg_only else None)) }}"
+               class="category-tab-btn {% if active_category == 'All' %}active{% endif %}">
+                <i class="fa-solid fa-utensils"></i> All Items
+            </a>
+            {% for cat in categories %}
+            <a href="{{ url_for('restaurant_detail', restaurant_id=restaurant.id, category=cat, veg=(1 if veg_only else None)) }}"
+               class="category-tab-btn {% if active_category == cat %}active{% endif %}">
+                {{ cat }}
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Veg Only Toggle -->
+        <div class="menu-diet-controls">
+            <a href="{{ url_for('restaurant_detail', restaurant_id=restaurant.id, category=active_category, veg=(None if veg_only else 1)) }}"
+               class="veg-filter-switch {% if veg_only %}active-veg{% endif %}">
+                <span class="veg-dot-marker"></span>
+                <span>Vegetarian Only</span>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- ===== Main Menu Content Layout ===== -->
+<div class="menu-content-section">
+    <div class="container menu-layout-grid">
+        <!-- Main Food Items Column -->
+        <div class="menu-items-col">
+            <div class="menu-col-header">
+                <h2 class="category-heading">
+                    {% if active_category == 'All' %}
+                        Full Menu & Specialities
+                    {% else %}
+                        {{ active_category }}
+                    {% endif %}
+                </h2>
+                <span class="menu-items-count">{{ menu_items|length }} dishes available</span>
+            </div>
+
+            {% if menu_items %}
+            <div class="dishes-grid">
+                {% for item in menu_items %}
+                <div class="dish-card" id="dishCard-{{ item.id }}">
+                    <div class="dish-info-col">
+                        <div class="dish-header-meta">
+                            <!-- Veg / Non-veg marker -->
+                            <span class="diet-icon {% if item.is_veg %}diet-veg{% else %}diet-non-veg{% endif %}"
+                                  title="{% if item.is_veg %}Vegetarian{% else %}Non-Vegetarian{% endif %}">
+                                <span class="diet-dot"></span>
+                            </span>
+
+                            {% if item.badge %}
+                                <span class="dish-badge-pill badge-{{ item.badge|lower|replace(' ', '-') }}">
+                                    {{ item.badge }}
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <h3 class="dish-name">{{ item.name }}</h3>
+
+                        <div class="dish-pricing">
+                            {% if item.discount_price %}
+                                <span class="price-current">₹{{ item.discount_price|int }}</span>
+                                <span class="price-strikethrough">₹{{ item.price|int }}</span>
+                                <span class="discount-tag">
+                                    {{ (((item.price - item.discount_price) / item.price) * 100)|int }}% OFF
+                                </span>
+                            {% else %}
+                                <span class="price-current">₹{{ item.price|int }}</span>
+                            {% endif %}
+                        </div>
+
+                        <p class="dish-desc">{{ item.description }}</p>
+
+                        <div class="dish-footer-meta">
+                            {% if item.calories %}
+                                <span class="dish-meta-chip"><i class="fa-solid fa-fire"></i> {{ item.calories }} kcal</span>
+                            {% endif %}
+                            <span class="dish-meta-chip"><i class="fa-solid fa-star"></i> {{ item.rating }}</span>
+                            {% if item.order_count %}
+                                <span class="dish-meta-chip"><i class="fa-solid fa-bag-shopping"></i> {{ item.order_count }}+ orders</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Dish Thumbnail & Interactive Cart Button -->
+                    <div class="dish-action-col">
+                        <div class="dish-img-wrapper">
+                            <img src="{{ item.image }}" alt="{{ item.name }}" class="dish-img" loading="lazy" />
+                        </div>
+
+                        <!-- Quantity control or Add button -->
+                        {% set curr_qty = cart_quantities.get(item.id, 0) %}
+                        <div class="dish-qty-control-wrapper" data-item-id="{{ item.id }}">
+                            <button type="button"
+                                    class="btn-add-to-cart {% if curr_qty > 0 %}hidden-btn{% endif %}"
+                                    onclick="addToCart({{ item.id }})">
+                                <i class="fa-solid fa-plus"></i> ADD
+                            </button>
+
+                            <div class="qty-stepper {% if curr_qty == 0 %}hidden-stepper{% endif %}">
+                                <button type="button" class="stepper-btn btn-minus" onclick="updateCartItem({{ item.id }}, 'decrease')">
+                                    <i class="fa-solid fa-minus"></i>
+                                </button>
+                                <span class="stepper-count" id="itemQty-{{ item.id }}">{{ curr_qty }}</span>
+                                <button type="button" class="stepper-btn btn-plus" onclick="updateCartItem({{ item.id }}, 'increase')">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-menu-box">
+                <i class="fa-solid fa-bowl-food empty-icon"></i>
+                <p>No dishes found matching your current category or dietary filter.</p>
+                <a href="{{ url_for('restaurant_detail', restaurant_id=restaurant.id) }}" class="btn-clear-subfilter">
+                    Show All Dishes
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- ===== Verified Reviews & Ratings Section ===== -->
+            <section class="reviews-section">
+                <div class="reviews-header">
+                    <div>
+                        <h2 class="reviews-title">Verified Customer Reviews</h2>
+                        <span class="reviews-subtitle">What Bengaluru foodies are saying about {{ restaurant.name }}</span>
+                    </div>
+
+                    <div class="overall-rating-card">
+                        <div class="overall-star-num"><i class="fa-solid fa-star"></i> {{ restaurant.rating }}</div>
+                        <div class="overall-meta">Based on {{ restaurant.review_count }} ratings</div>
+                    </div>
+                </div>
+
+                <!-- Reviews Grid -->
+                <div class="reviews-list">
+                    {% for rev in reviews %}
+                    <div class="review-item-card">
+                        <div class="review-author-row">
+                            <div class="author-avatar">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <div class="author-details">
+                                <div class="author-name">
+                                    {{ rev.user_name }}
+                                    <span class="verified-tag"><i class="fa-solid fa-circle-check"></i> Verified Diner</span>
+                                </div>
+                                <div class="review-stars">
+                                    {% for s in range(rev.rating) %}
+                                        <i class="fa-solid fa-star"></i>
+                                    {% endfor %}
+                                    <span class="review-date">{{ rev.created_at.split(' ')[0] if rev.created_at else 'Recent' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="review-comment">"{{ rev.comment }}"</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Write Review Form -->
+                <div class="add-review-card">
+                    <h3 class="add-review-title">Had a meal here? Share your experience</h3>
+                    {% if session.user_id %}
+                    <form action="{{ url_for('restaurant_detail', restaurant_id=restaurant.id) }}" method="POST" class="review-form">
+                        <div class="form-row-stars">
+                            <label class="star-label">Rating:</label>
+                            <div class="star-rating-select">
+                                <select name="rating" class="rating-dropdown">
+                                    <option value="5">⭐⭐⭐⭐⭐ (5 - Exceptional)</option>
+                                    <option value="4">⭐⭐⭐⭐ (4 - Very Good)</option>
+                                    <option value="3">⭐⭐⭐ (3 - Average)</option>
+                                    <option value="2">⭐⭐ (2 - Below Average)</option>
+                                    <option value="1">⭐ (1 - Disappointing)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group-review">
+                            <textarea
+                                name="comment"
+                                rows="3"
+                                class="review-textarea"
+                                placeholder="Tell fellow diners about the taste, packaging, and portion size..."
+                                required
+                            ></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-submit-review">Post Review</button>
+                    </form>
+                    {% else %}
+                    <div class="login-to-review">
+                        <p>Please <a href="{{ url_for('login', next=request.path) }}" class="inline-link">log in to your account</a> to post a verified review.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+
+        <!-- Sidebar Floating Cart Widget -->
+        <aside class="menu-cart-sidebar">
+            <div class="sidebar-cart-card sticky-sidebar">
+                <div class="sidebar-cart-header">
+                    <div class="cart-header-title">
+                        <i class="fa-solid fa-bag-shopping"></i>
+                        <span>Your Order</span>
+                    </div>
+                    <span class="sidebar-cart-count" id="sidebarCartCount">{{ cart_count }} items</span>
+                </div>
+
+                <div class="sidebar-cart-body" id="sidebarCartBody">
+                    {% if cart_count > 0 %}
+                    <p class="sidebar-ready-msg">You have items waiting in your bag.</p>
+                    <div class="free-delivery-indicator">
+                        <i class="fa-solid fa-truck-fast"></i>
+                        <span>Order over ₹500 for Free Delivery!</span>
+                    </div>
+                    <a href="{{ url_for('view_cart') }}" class="btn-sidebar-checkout">
+                        <span>Review Bag & Checkout</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                    {% else %}
+                    <div class="sidebar-empty-cart">
+                        <i class="fa-solid fa-basket-shopping empty-basket-icon"></i>
+                        <p>Your basket is empty</p>
+                        <span class="subtext">Add flavorful items from the menu to build your order!</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="sidebar-safety-badge">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>Contactless Safe Delivery Guarantee</span>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+{% endblock %}
